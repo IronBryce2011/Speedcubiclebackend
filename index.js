@@ -16,7 +16,7 @@ const pool = new Pool({
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 // ---- Middleware ----
-app.use(cors({ origin: 'speedcubicle.vercel.app' }));
+app.use(cors({ origin: 'https://speedcubicle.vercel.app' }));
 app.use(express.json()); // For regular JSON bodies
 
 // ---- Utility: Send confirmation email ----
