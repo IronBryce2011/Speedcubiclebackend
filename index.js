@@ -147,6 +147,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
+
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
@@ -158,6 +159,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     const session = event.data.object;
     const email = session.customer_email;
     let items = [];
+
+    // Try to parse items from metadata
     try {
       if (session.metadata && session.metadata.items) {
         items = JSON.parse(session.metadata.items);
@@ -166,7 +169,23 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       console.error('Failed to parse items from metadata:', e.message);
     }
 
-    // Update stock and insert order
+    // 🔁 Fallback: Look up most recent order by email
+    if (items.length === 0 && email) {
+      try {
+        const { rows } = await pool.query(
+          'SELECT products FROM orders WHERE email=$1 ORDER BY created_at DESC LIMIT 1',
+          [email]
+        );
+        if (rows.length > 0) {
+          items = JSON.parse(rows[0].products);
+          console.log('Recovered items from DB fallback:', items);
+        }
+      } catch (err) {
+        console.error('Fallback DB lookup failed:', err.message);
+      }
+    }
+
+    // ✅ Proceed with stock update and order insert
     let total = 0;
     for (const item of items) {
       const { rows } = await pool.query('SELECT price, stock FROM products WHERE id=$1', [item.id]);
