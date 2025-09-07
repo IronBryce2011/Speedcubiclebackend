@@ -9,7 +9,8 @@ const app = express();
 // ---- Database ----
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL, // Use env var for deployment
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false }
+
 });
 
 // ---- Stripe ----
