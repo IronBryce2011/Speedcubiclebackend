@@ -123,13 +123,20 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
   try {
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items,
-      mode: 'payment',
-      customer_email: email,
-      success_url: process.env.FRONTEND_URL + '/success',
-      cancel_url: process.env.FRONTEND_URL + '/cancel',
-    });
+  payment_method_types: ['card'],
+  line_items,
+  mode: 'payment',
+  customer_email: email,
+  success_url: process.env.FRONTEND_URL + '/success',
+  cancel_url: process.env.FRONTEND_URL + '/cancel',
+  metadata: {
+    items: JSON.stringify(items.map(i => ({
+      id: i.id,
+      quantity: i.quantity
+    })))
+  }
+});
+
     res.json({ url: session.url });
   } catch (err) {
     res.status(500).json({ error: err.message });
